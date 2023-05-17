@@ -5,6 +5,6 @@ module com.example.demo {
     requires java.desktop;
 
 
-    opens com.example.demo to javafx.fxml;
-    exports com.example.demo;
+    opens crypto.system to javafx.fxml;
+    exports crypto.system;
 }
