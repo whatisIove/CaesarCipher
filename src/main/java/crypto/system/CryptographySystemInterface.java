@@ -4,12 +4,6 @@ import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundImage;
-import javafx.scene.layout.BackgroundPosition;
-import javafx.scene.layout.BackgroundRepeat;
-import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -20,14 +14,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Locale;
 
 public class CryptographySystemInterface extends Application {
-    private CaesarCipher caesarCipher;
-    private String selectedLanguage;
+    private Locale selectedLocale;
     private TextArea consoleTextArea;
     private File currentFile;
+    private final int key = 3;
 
     public static void main(String[] args) {
         launch(args);
@@ -36,8 +29,6 @@ public class CryptographySystemInterface extends Application {
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Cryptography System with Caesar Cipher");
-
-        caesarCipher = new CaesarCipher(3); // Example: using key 3
 
         // Create menu
         Menu fileMenu = new Menu("File");
@@ -68,6 +59,10 @@ public class CryptographySystemInterface extends Application {
         // Create console text area
         consoleTextArea = new TextArea();
         consoleTextArea.setEditable(false);
+
+        // Create input text fields
+        TextField encryptInputField = new TextField();
+        TextField decryptInputField = new TextField();
 
         // Event handlers
         createItem.setOnAction(e -> {
@@ -104,79 +99,220 @@ public class CryptographySystemInterface extends Application {
         });
 
         printItem.setOnAction(e -> {
-            if (currentFile != null) {
-                System.out.println("Selected file for printing: " + currentFile.getAbsolutePath());
-                printFile(currentFile);
+            System.out.println("Selected menu: Print");
+            if (Desktop.isDesktopSupported()) {
+                try {
+                    File tempFile = File.createTempFile("temp", ".txt");
+                    saveFile(tempFile, consoleTextArea.getText());
+                    Desktop.getDesktop().print(tempFile);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
             }
         });
-        exitItem.setOnAction(e -> primaryStage.close());
+
+        exitItem.setOnAction(e -> {
+            System.out.println("Selected menu: Exit");
+            primaryStage.close();
+        });
 
         encryptUkrainianItem.setOnAction(e -> {
-            selectedLanguage = "Ukrainian";
-            System.out.println("Selected menu: Encrypt (Ukrainian)");
+            System.out.println("Selected menu: Ukrainian Language");
+            selectedLocale = new Locale("uk", "UA");
+            encryptButton.setText("Зашифрувати");
+            decryptButton.setText("Розшифрувати");
+            encryptInputField.setPromptText("Введіть український текст");
+            decryptInputField.setPromptText("Введіть український текст");
         });
 
         encryptEnglishItem.setOnAction(e -> {
-            selectedLanguage = "English";
-            System.out.println("Selected menu: Encrypt (English)");
-        });
-
-        developerItem.setOnAction(e -> {
-            Stage developerStage = new Stage();
-            developerStage.setTitle("Developer");
-            Label developerLabel = new Label("Developer of this project: \nButok Vladislav 122m-22-3");
-            VBox developerLayout = new VBox(developerLabel);
-            developerLayout.setPadding(new Insets(10));
-            Scene developerScene = new Scene(developerLayout, 200, 100);
-            developerStage.setScene(developerScene);
-            developerStage.show();
+            System.out.println("Selected menu: English Language");
+            selectedLocale = Locale.ENGLISH;
+            encryptButton.setText("Encrypt");
+            decryptButton.setText("Decrypt");
+            encryptInputField.setPromptText("Enter English text");
+            decryptInputField.setPromptText("Enter English text");
         });
 
         encryptButton.setOnAction(e -> {
-            TextInputDialog dialog = new TextInputDialog();
-            dialog.setTitle("Encrypt Message");
-            dialog.setHeaderText("Enter the message to encrypt:");
-            dialog.setContentText("Message:");
-            String message = dialog.showAndWait().orElse("");
-            String encryptedMessage = encryptMessage(message);
-            consoleTextArea.appendText("Encrypted message: " + encryptedMessage + "\n");
-            System.out.println("Encrypted message: " + encryptedMessage);
+            System.out.println("Encrypting...");
+            String inputText = encryptInputField.getText();
+            if (!isEnglishText(inputText)) {
+                showAlert("Invalid Input", "Only English letters are allowed.");
+                return;
+            }
+            String encryptedText = encryptMessage(inputText);
+            consoleTextArea.setText(encryptedText);
+            System.out.println("Encrypted message: " + encryptedText);
         });
 
         decryptButton.setOnAction(e -> {
-            TextInputDialog dialog = new TextInputDialog();
-            dialog.setTitle("Decrypt Message");
-            dialog.setHeaderText("Enter the encrypted message to decrypt:");
-            dialog.setContentText("Encrypted message:");
-
-            String encryptedMessage = dialog.showAndWait().orElse("");
-            String decryptedMessage = decryptMessage(encryptedMessage);
-            consoleTextArea.appendText("Decrypted message: " + decryptedMessage + "\n");
-            System.out.println("Decrypted message: " + decryptedMessage);
+            System.out.println("Decrypting...");
+            String inputText = decryptInputField.getText();
+            if (!isEnglishText(inputText)) {
+                showAlert("Invalid Input", "Only English letters are allowed.");
+                return;
+            }
+            String decryptedText = decryptMessage(inputText);
+            consoleTextArea.setText(decryptedText);
+            System.out.println("Decrypted message: " + decryptedText);
         });
 
-        exitButton.setOnAction(e -> primaryStage.close());
+        encryptButton.setOnAction(e -> {
+            System.out.println("Encrypting...");
+            String inputText = encryptInputField.getText();
+            if (selectedLocale.equals(Locale.ENGLISH) && !isEnglishText(inputText)) {
+                showAlert("Invalid Input", "Only English letters are allowed.");
+                return;
+            } else if (selectedLocale.equals(new Locale("uk", "UA")) && !isUkrainianText(inputText)) {
+                showAlert("Invalid Input", "Only Ukrainian letters are allowed.");
+                return;
+            }
+            String encryptedText = encryptMessage(inputText);
+            consoleTextArea.setText(encryptedText);
+            System.out.println("Encrypted message: " + encryptedText);
+        });
 
-        // Create vertical container
-        VBox vbox = new VBox();
-        vbox.setPadding(new Insets(10));
-        vbox.setSpacing(5);
-        vbox.getChildren().addAll(menuBar, encryptButton, decryptButton, exitButton, consoleTextArea);
+        decryptButton.setOnAction(e -> {
+            System.out.println("Decrypting...");
+            String inputText = decryptInputField.getText();
+            if (selectedLocale.equals(Locale.ENGLISH) && !isEnglishText(inputText)) {
+                showAlert("Invalid Input", "Only English letters are allowed.");
+                return;
+            } else if (selectedLocale.equals(new Locale("uk", "UA")) && !isUkrainianText(inputText)) {
+                showAlert("Invalid Input", "Only Ukrainian letters are allowed.");
+                return;
+            }
+            String decryptedText = decryptMessage(inputText);
+            consoleTextArea.setText(decryptedText);
+            System.out.println("Decrypted message: " + decryptedText);
+        });
 
-        // Create scene
-        Scene scene = new Scene(vbox, 400, 500);
+        exitButton.setOnAction(e -> {
+            System.out.println("Exit button clicked");
+            primaryStage.close();
+        });
 
-        // Set background image
-        Image backgroundImage = new Image("file:///path/to/background_image.jpg");
-        BackgroundImage background = new BackgroundImage(backgroundImage, BackgroundRepeat.REPEAT, BackgroundRepeat.REPEAT, BackgroundPosition.DEFAULT, BackgroundSize.DEFAULT);
-        vbox.setBackground(new Background(background));
+        developerItem.setOnAction(e -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("About Developer");
+            alert.setHeaderText("Cryptography System with Caesar Cipher");
+            alert.setContentText("Developer: Butok Vladislav 122m-22-3\nEmail: butok.v.o@nmu.one");
+            alert.showAndWait();
+        });
 
-        // Center the window on the screen
-        primaryStage.centerOnScreen();
+        // Create layout
+        VBox layout = new VBox();
+        layout.setPadding(new Insets(10));
+        layout.setSpacing(10);
+        layout.getChildren().addAll(menuBar, consoleTextArea, encryptInputField, encryptButton, decryptInputField, decryptButton, exitButton);
 
-        // Set the scene for the primaryStage
+        Scene scene = new Scene(layout, 600, 400);
         primaryStage.setScene(scene);
         primaryStage.show();
+    }
+
+    private String encryptMessage(String message) {
+        StringBuilder encryptedMessage = new StringBuilder();
+
+        for (int i = 0; i < message.length(); i++) {
+            char ch = message.charAt(i);
+
+            if (Character.isLetter(ch)) {
+                char encryptedChar;
+                if (selectedLocale.equals(Locale.ENGLISH)) {
+                    encryptedChar = encryptEnglishLetter(ch);
+                } else if (selectedLocale.equals(new Locale("uk", "UA"))) {
+                    encryptedChar = encryptUkrainianLetter(ch);
+                } else {
+                    encryptedChar = ch;
+                }
+                encryptedMessage.append(encryptedChar);
+            } else {
+                encryptedMessage.append(ch);
+            }
+        }
+
+        return encryptedMessage.toString();
+    }
+
+    private String decryptMessage(String encryptedMessage) {
+        StringBuilder decryptedMessage = new StringBuilder();
+
+        for (int i = 0; i < encryptedMessage.length(); i++) {
+            char ch = encryptedMessage.charAt(i);
+
+            if (Character.isLetter(ch)) {
+                char decryptedChar;
+                if (selectedLocale.equals(Locale.ENGLISH)) {
+                    decryptedChar = decryptEnglishLetter(ch);
+                } else if (selectedLocale.equals(new Locale("uk", "UA"))) {
+                    decryptedChar = decryptUkrainianLetter(ch);
+                } else {
+                    decryptedChar = ch;
+                }
+                decryptedMessage.append(decryptedChar);
+            } else {
+                decryptedMessage.append(ch);
+            }
+        }
+
+        return decryptedMessage.toString();
+    }
+
+    private boolean isEnglishText(String text) {
+        if (selectedLocale.equals(Locale.ENGLISH)) {
+            String pattern = "^[A-Za-z\\s]+$";
+            return text.matches(pattern);
+        }
+        return false;
+    }
+
+    private boolean isUkrainianText(String text) {
+        if (selectedLocale.equals(new Locale("uk", "UA"))) {
+            String pattern = "^[А-ЩЬЮЯҐЄІЇа-щьюяґєії\\s]+$";
+            return text.matches(pattern);
+        }
+        return false;
+    }
+
+    private char encryptEnglishLetter(char letter) {
+        char shiftedLetter = (char) (letter + key);
+        if (shiftedLetter > 'z') {
+            shiftedLetter = (char) ('a' + (shiftedLetter - 'z' - 1));
+        }
+        return shiftedLetter;
+    }
+
+    private char decryptEnglishLetter(char letter) {
+        char shiftedLetter = (char) (letter - key);
+        if (shiftedLetter < 'a') {
+            shiftedLetter = (char) ('z' - ('a' - shiftedLetter - 1));
+        }
+        return shiftedLetter;
+    }
+
+    private char encryptUkrainianLetter(char letter) {
+        char shiftedLetter = (char) (letter + key);
+        if (shiftedLetter > 'Я') {
+            shiftedLetter = (char) ('А' + (shiftedLetter - 'Я' - 1));
+        }
+        return shiftedLetter;
+    }
+
+    private char decryptUkrainianLetter(char letter) {
+        char shiftedLetter = (char) (letter - key);
+        if (shiftedLetter < 'А') {
+            shiftedLetter = (char) ('Я' - ('А' - shiftedLetter - 1));
+        }
+        return shiftedLetter;
+    }
+
+    private void showAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 
     private void displayFileContent(File file) {
@@ -187,98 +323,16 @@ public class CryptographySystemInterface extends Application {
                 content.append(line).append("\n");
             }
             consoleTextArea.setText(content.toString());
-            System.out.println("File content displayed in the program.");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void printFile(File file) {
-        if (Desktop.isDesktopSupported()) {
-            Desktop desktop = Desktop.getDesktop();
-            try {
-                desktop.print(file);
-            } catch (IOException e) {
-                e.printStackTrace();
-                // Handle file printing errors
-            }
-        }
-
-    }
-
-    private void saveFile(File file, String text) {
-        try {
-            FileWriter writer = new FileWriter(file);
-            writer.write(text);
-            writer.close();
+    private void saveFile(File file, String content) {
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(content);
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private String encryptMessage(String message) {
-        String encryptedMessage = "";
-
-        if (selectedLanguage.equals("Ukrainian")) {
-            // Проверка, что введенное сообщение содержит только украинские символы
-            if (!isUkrainianText(message)) {
-                consoleTextArea.appendText("Invalid input. Only Ukrainian characters are allowed.\n");
-                return message;
-            }
-            // Encrypt Ukrainian text
-            encryptedMessage = caesarCipher.encryptUkrainian(message);
-        } else if (selectedLanguage.equals("English")) {
-            // Проверка, что введенное сообщение содержит только английские символы
-            if (isUkrainianText(message)) {
-                consoleTextArea.appendText("Invalid input. Only English characters are allowed.\n");
-                return message;
-            }
-            // Encrypt English text
-            encryptedMessage = caesarCipher.encryptEnglish(message);
-        } else {
-            // Return the original message if the language is not selected
-            return message;
-        }
-
-        // Display the encrypted message if no error occurred
-        consoleTextArea.appendText("Encrypted message: " + encryptedMessage + "\n");
-        return encryptedMessage;
-    }
-
-    private String decryptMessage(String encryptedMessage) {
-        String decryptedMessage = "";
-
-        if (selectedLanguage.equals("Ukrainian")) {
-            // Decrypt Ukrainian text
-            decryptedMessage = caesarCipher.decryptUkrainian(encryptedMessage);
-            // Проверка, что расшифрованное сообщение содержит только украинские символы
-            if (!isUkrainianText(decryptedMessage)) {
-                consoleTextArea.appendText("Decryption error. The decrypted message contains invalid characters.\n");
-                return encryptedMessage; // Возвращаем зашифрованное сообщение
-            }
-        } else if (selectedLanguage.equals("English")) {
-            // Decrypt English text
-            decryptedMessage = caesarCipher.decryptEnglish(encryptedMessage);
-            // Проверка, что расшифрованное сообщение содержит только английские символы
-            if (!isUkrainianText(decryptedMessage)) {
-                consoleTextArea.appendText("Decryption error. The decrypted message contains invalid characters.\n");
-                return encryptedMessage; // Возвращаем зашифрованное сообщение
-            }
-        } else {
-            // Return the encrypted message if the language is not selected
-            return encryptedMessage;
-        }
-
-        // Display the decrypted message if no error occurred
-        consoleTextArea.appendText("Decrypted message: " + decryptedMessage + "\n");
-        return decryptedMessage;
-    }
-
-
-    private boolean isUkrainianText(String text) {
-        // Паттерн для проверки, что текст содержит только украинские символы
-        Pattern pattern = Pattern.compile("^[А-ЩЬЮЯҐЄІЇа-щьюяґєії]+$");
-        Matcher matcher = pattern.matcher(text);
-        return matcher.matches();
     }
 }
