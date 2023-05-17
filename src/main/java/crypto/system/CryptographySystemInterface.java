@@ -169,7 +169,7 @@ public class CryptographySystemInterface extends Application {
                 return;
             }
             String encryptedText = encryptMessage(inputText);
-            consoleTextArea.setText(encryptedText);
+            consoleTextArea.appendText("Encrypted message: " +  encryptedText + "\n");
             System.out.println("Encrypted message: " + encryptedText);
         });
 
@@ -184,7 +184,7 @@ public class CryptographySystemInterface extends Application {
                 return;
             }
             String decryptedText = decryptMessage(inputText);
-            consoleTextArea.setText(decryptedText);
+            consoleTextArea.appendText("Decrypted message: " + decryptedText + "\n");
             System.out.println("Decrypted message: " + decryptedText);
         });
 
